@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Props {
   roomDimensions: {
@@ -15,10 +15,45 @@ interface Props {
   } | null;
 }
 
+interface ImageModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  imageUrl: string;
+  title: string;
+}
+
+function ImageModal({ isOpen, onClose, imageUrl, title }: ImageModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-lg max-w-4xl w-full p-4" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full h-auto rounded-lg"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function RoomVisualizer({ roomDimensions, selectedFurniture }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const CANVAS_SIZE = 600; // Increased canvas size
   const PADDING = 60; // Increased padding
+  const [modalImage, setModalImage] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -190,17 +225,47 @@ export function RoomVisualizer({ roomDimensions, selectedFurniture }: Props) {
   return (
     <div className="mt-6 bg-white p-4 rounded-lg border border-gray-200">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Room Visualization</h3>
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_SIZE}
-        height={CANVAS_SIZE}
-        className="w-full border border-gray-200 rounded-lg shadow-sm"
-      />
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_SIZE}
+          height={CANVAS_SIZE}
+          className="w-full border border-gray-200 rounded-lg shadow-sm cursor-pointer"
+          onClick={() => {
+            if (roomDimensions) {
+              setModalImage({
+                url: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=1600&q=90',
+                title: 'Room View'
+              });
+            }
+          }}
+        />
+        {selectedFurniture && (
+          <button
+            className="absolute bottom-4 right-4 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 px-3 py-2 rounded-lg shadow-sm border border-gray-200 text-sm font-medium flex items-center gap-2 transition-colors"
+            onClick={() => setModalImage({
+              url: selectedFurniture.image,
+              title: selectedFurniture.name
+            })}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m4-3H6" />
+            </svg>
+            View Furniture
+          </button>
+        )}
+      </div>
       {!roomDimensions && (
         <p className="text-center text-gray-500 mt-4">
           Enter room dimensions to see visualization
         </p>
       )}
+      <ImageModal
+        isOpen={!!modalImage}
+        onClose={() => setModalImage(null)}
+        imageUrl={modalImage?.url || ''}
+        title={modalImage?.title || ''}
+      />
     </div>
   );
 }
